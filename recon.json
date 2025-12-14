@@ -31,5 +31,86 @@
       }
     ],
     "separated": true
+  },
+  "out/VotingEscrow.sol/VotingEscrow.json": {
+    "enabled": true,
+    "functions": [
+      {
+        "signature": "add_to_whitelist(address)",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "changeController(address)",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "checkpoint()",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "create_lock(uint256,uint256)",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "deposit_for(address,uint256)",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "grantRole(bytes32,address)",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "increase_amount(uint256)",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "increase_amount_and_time(uint256,uint256)",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "increase_unlock_time(uint256)",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "remove_from_whitelist(address)",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "renounceRole(bytes32,address)",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "revokeRole(bytes32,address)",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "unlock()",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "withdraw()",
+        "actor": "actor",
+        "mode": "normal"
+      },
+      {
+        "signature": "withdraw_and_create_lock(uint256,uint256)",
+        "actor": "actor",
+        "mode": "normal"
+      }
+    ],
+    "separated": true
   }
 }

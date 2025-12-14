@@ -15,6 +15,7 @@ import { LinearCurveTargets } from "./targets/LinearCurveTargets.sol";
 import { ManagersTargets } from "./targets/ManagersTargets.sol";
 import { OffsetProgressiveCurveTargets } from "./targets/OffsetProgressiveCurveTargets.sol";
 import { ProgressiveCurveTargets } from "./targets/ProgressiveCurveTargets.sol";
+import { VotingEscrowTargets } from "./targets/VotingEscrowTargets.sol";
 
 abstract contract TargetFunctions is
     AdminTargets,
@@ -22,7 +23,8 @@ abstract contract TargetFunctions is
     LinearCurveTargets,
     ManagersTargets,
     OffsetProgressiveCurveTargets,
-    ProgressiveCurveTargets
+    ProgressiveCurveTargets,
+    VotingEscrowTargets
 {
     /// CUSTOM TARGET FUNCTIONS - Add your own target functions here ///
 

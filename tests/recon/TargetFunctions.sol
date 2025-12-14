@@ -13,6 +13,7 @@ import { AdminTargets } from "./targets/AdminTargets.sol";
 import { DoomsdayTargets } from "./targets/DoomsdayTargets.sol";
 import { LinearCurveTargets } from "./targets/LinearCurveTargets.sol";
 import { ManagersTargets } from "./targets/ManagersTargets.sol";
+import { MultiVaultTargets } from "./targets/MultiVaultTargets.sol";
 import { OffsetProgressiveCurveTargets } from "./targets/OffsetProgressiveCurveTargets.sol";
 import { ProgressiveCurveTargets } from "./targets/ProgressiveCurveTargets.sol";
 import { VotingEscrowTargets } from "./targets/VotingEscrowTargets.sol";
@@ -22,6 +23,7 @@ abstract contract TargetFunctions is
     DoomsdayTargets,
     LinearCurveTargets,
     ManagersTargets,
+    MultiVaultTargets,
     OffsetProgressiveCurveTargets,
     ProgressiveCurveTargets,
     VotingEscrowTargets

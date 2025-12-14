@@ -7,6 +7,7 @@ import {vm} from "@chimera/Hevm.sol";
 
 // Helpers
 import {Panic} from "@recon/Panic.sol";
+import { GeneralConfig } from "src/interfaces/IMultiVaultCore.sol";
 
 abstract contract MultiVaultTargets is BaseTargetFunctions, Properties {
 
@@ -123,7 +124,11 @@ abstract contract MultiVaultTargets is BaseTargetFunctions, Properties {
     }
 
     // Helpers
-    function _createSimpleAtom(string memory atomString, uint256 depositAmount, address creator) internal returns (bytes32) {
+    function _createSimpleAtom(
+        string memory atomString,
+        uint256 depositAmount,
+        address creator
+    ) internal returns (bytes32) {
         bytes memory atomData = abi.encodePacked(atomString, block.timestamp, creator, msg.sig);
 
         bytes[] memory dataArray = new bytes[](1);
@@ -142,5 +147,99 @@ abstract contract MultiVaultTargets is BaseTargetFunctions, Properties {
             assert(false);
             return bytes32(0);
         }
+    }
+
+    function multiVault_deposit_NonDefaultCurve_AccruesEntryFeeAndReducesSharesPerAsset(
+        uint96[] memory amounts
+    ) public asActor {
+        if (amounts.length == 0) return;
+
+        uint256 oldThreshold;
+        {
+            vm.prank(address(this));
+            GeneralConfig memory gc = multiVault.getGeneralConfig();
+            oldThreshold = gc.feeThreshold;
+            gc.feeThreshold = 0;
+            multiVault.setGeneralConfig(gc);
+        }
+
+        bytes32 atomId = _createSimpleAtom("Recon Fuzz Atom", 0, _getActor());
+        uint256 defAssetsBase;
+        uint256 defSharesBase;
+
+        {
+            uint256 firstAmt = _sanitize(amounts[0]);
+            vm.deal(_getActor(), 100_000 ether);
+
+            vm.prank(_getActor());
+            try multiVault.deposit{value: firstAmt}(_getActor(), atomId, 2, 0) {
+                // Success
+            } catch {
+                vm.prank(address(this));
+                GeneralConfig memory gc = multiVault.getGeneralConfig();
+                gc.feeThreshold = oldThreshold;
+                multiVault.setGeneralConfig(gc);
+                return;
+            }
+            (defAssetsBase, defSharesBase) = multiVault.getVault(atomId, 1);
+        }
+
+        uint256 expectedAdded;
+        uint256 prevShares;
+        {
+            (prevShares,) = multiVault.previewDeposit(atomId, 1, 3 ether);
+        }
+
+        uint256 entryFeeBps;
+        uint256 feeDen;
+        {
+            (entryFeeBps,,) = multiVault.vaultFees();
+            feeDen = multiVault.getGeneralConfig().feeDenominator;
+        }
+
+        for (uint256 i = 1; i < amounts.length && i < 10; i++) {
+            uint256 amt = _sanitize(amounts[i]);
+
+            vm.prank(_getActor());
+            try multiVault.deposit{value: amt}(_getActor(), atomId, 2, 0) {
+                // Success
+            } catch {
+                continue;
+            }
+
+            expectedAdded += _mulDivUp(amt, entryFeeBps, feeDen);
+
+            {
+                (uint256 defA, uint256 defS) = multiVault.getVault(atomId, 1);
+                assert(defS == defSharesBase);
+                assert(defA == defAssetsBase + expectedAdded);
+            }
+
+            {
+                (uint256 nowShares,) = multiVault.previewDeposit(atomId, 1, 3 ether);
+                assert(nowShares <= prevShares);
+                prevShares = nowShares;
+            }
+        }
+
+        vm.prank(address(this));
+        GeneralConfig memory gcFinal = multiVault.getGeneralConfig();
+        gcFinal.feeThreshold = oldThreshold;
+        multiVault.setGeneralConfig(gcFinal);
+    }
+
+    function _sanitize(uint96 x) internal view returns (uint256) {
+        // keep deposits in a safe and meaningful band:
+        //  >= minDeposit + minShare (to avoid min-share check on non-default new vault)
+        //  and cap to avoid curve max-asset surprises in extreme fuzz
+        uint256 min =
+            multiVault.getGeneralConfig().minDeposit + multiVault.getGeneralConfig().minShare;
+        uint256 capped = uint256(x) % (50 ether);
+        if (capped < min) capped = min;
+        return capped;
+    }
+
+    function _mulDivUp(uint256 a, uint256 b, uint256 d) internal pure returns (uint256) {
+        return (a == 0 || b == 0) ? 0 : ((a * b) + (d - 1)) / d;
     }
 }

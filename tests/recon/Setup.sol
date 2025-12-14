@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.29;
 
 // Chimera deps
 import {BaseSetup} from "@chimera/BaseSetup.sol";
@@ -20,19 +20,13 @@ import "src/protocol/curves/ProgressiveCurve.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "src/external/curve/VotingEscrow.sol";
 import {ERC20Mock} from "tests/mocks/ERC20Mock.sol";
-
-/// @dev Test harness to expose internal VotingEscrow initializer function
-contract VotingEscrowHarness is VotingEscrow {
-    function initialize(address admin, address tokenAddress, uint256 minTime) external initializer {
-        __VotingEscrow_init(admin, tokenAddress, minTime);
-    }
-}
+import {VotingEscrowHarness} from "tests/mocks/VotingEscrowHarness.sol";
 
 abstract contract Setup is BaseSetup, ActorManager, AssetManager, Utils {
     LinearCurve linearCurve;
     OffsetProgressiveCurve offsetProgressiveCurve;
     ProgressiveCurve progressiveCurve;
-    VotingEscrow votingEscrow;
+    VotingEscrowHarness votingEscrow;
     ERC20Mock token;
 
     /// === Setup === ///
@@ -46,7 +40,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager, Utils {
             address(this),
             abi.encodeWithSelector(VotingEscrowHarness.initialize.selector, address(this), address(token), 2 weeks)
         );
-        votingEscrow = VotingEscrow(address(votingEscrowProxy));
+        votingEscrow = VotingEscrowHarness(address(votingEscrowProxy));
         votingEscrow.add_to_whitelist(address(this));
 
         LinearCurve linearCurveImpl = new LinearCurve();

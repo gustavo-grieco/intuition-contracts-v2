@@ -13,6 +13,7 @@ import {Panic} from "@recon/Panic.sol";
 
 import "src/external/curve/VotingEscrow.sol";
 import {ERC20Mock} from "tests/mocks/ERC20Mock.sol";
+import {VotingEscrowHarness} from "tests/mocks/VotingEscrowHarness.sol";
 
 abstract contract VotingEscrowTargets is
     BaseTargetFunctions,
@@ -313,5 +314,69 @@ abstract contract VotingEscrowTargets is
         uint256 currentSupply = votingEscrow.totalSupply();
 
         assert(pastSupply >= currentSupply);
+    }
+
+    // Corresponds to testFuzz_find_timestamp_epoch_matches_linear_scan
+    function votingEscrow_find_timestamp_epoch_matches_linear_scan(uint256 tRaw) public {
+        uint256 baseTs = 30_000;
+        uint256 baseBlk = 2000;
+        uint256 numEpochs = 6;
+
+        for (uint256 i = 0; i < numEpochs; ++i) {
+            votingEscrow.h_setPointHistory(
+                i,
+                int128(int256(i + 1)),
+                int128(int256(0)),
+                baseTs + i * 123,
+                baseBlk + i * 13
+            );
+        }
+        votingEscrow.h_setEpoch(numEpochs - 1);
+
+        uint256 minT = baseTs - 500;
+        uint256 maxT = baseTs + numEpochs * 123 + 500;
+        uint256 t = _boundValue(tRaw, minT, maxT);
+
+        uint256 expected = 0;
+        for (uint256 i = 0; i < numEpochs; ++i) {
+            (,, uint256 ts,) = votingEscrow.point_history(i);
+            if (ts <= t) {
+                expected = i;
+            }
+        }
+
+        uint256 actual = votingEscrow.exposed_find_timestamp_epoch(t, numEpochs - 1);
+        assert(actual == expected);
+    }
+
+    // Corresponds to testFuzz_find_user_timestamp_epoch_matches_linear_scan
+    function votingEscrow_find_user_timestamp_epoch_matches_linear_scan(uint256 tRaw) public {
+        address alice = address(0x9999);
+
+        uint256 baseTs = 50_000;
+        uint256 baseBlk = 4000;
+        uint256 numUserEpochs = 5;
+
+        for (uint256 i = 1; i <= numUserEpochs; ++i) {
+            votingEscrow.h_setUserPoint(
+                alice, i, int128(int256(i)), int128(int256(0)), baseTs + (i - 1) * 111, baseBlk + (i - 1) * 9
+            );
+        }
+        votingEscrow.h_setUserEpoch(alice, numUserEpochs);
+
+        uint256 minT = baseTs - 300;
+        uint256 maxT = baseTs + numUserEpochs * 111 + 300;
+        uint256 t = _boundValue(tRaw, minT, maxT);
+
+        uint256 expected = 0;
+        for (uint256 i = 1; i <= numUserEpochs; ++i) {
+            (,, uint256 ts,) = votingEscrow.user_point_history(alice, i);
+            if (ts <= t) {
+                expected = i;
+            }
+        }
+
+        uint256 actual = votingEscrow.exposed_find_user_timestamp_epoch(alice, t);
+        assert(actual == expected);
     }
 }

@@ -6,3 +6,5 @@ forge-std/=lib/forge-std/
 solady/=lib/solady/src/
 @prb/math/=lib/prb-math/
 @account-abstraction/=lib/account-abstraction/contracts/
+@chimera/=lib/chimera/src/
+@recon/=lib/setup-helpers/src/

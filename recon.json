@@ -1,0 +1,35 @@
+{
+  "out/LinearCurve.sol/LinearCurve.json": {
+    "enabled": true,
+    "functions": [
+      {
+        "signature": "initialize(string)",
+        "actor": "actor",
+        "mode": "normal"
+      }
+    ],
+    "separated": true
+  },
+  "out/OffsetProgressiveCurve.sol/OffsetProgressiveCurve.json": {
+    "enabled": true,
+    "functions": [
+      {
+        "signature": "initialize(string,uint256,uint256)",
+        "actor": "actor",
+        "mode": "normal"
+      }
+    ],
+    "separated": true
+  },
+  "out/ProgressiveCurve.sol/ProgressiveCurve.json": {
+    "enabled": true,
+    "functions": [
+      {
+        "signature": "initialize(string,uint256)",
+        "actor": "actor",
+        "mode": "normal"
+      }
+    ],
+    "separated": true
+  }
+}

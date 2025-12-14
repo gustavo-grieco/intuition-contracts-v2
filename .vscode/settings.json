@@ -8,5 +8,6 @@
         "solady/=lib/solady/src/",
         "@prb/math/=lib/prb-math/",
         "@account-abstraction/=lib/account-abstraction/contracts/"
-    ]
+    ],
+    "recon.defaultFuzzer": "Echidna"
 }

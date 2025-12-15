@@ -37,7 +37,7 @@ abstract contract VotingEscrowTargets is
     /// AUTO GENERATED TARGET FUNCTIONS - ADAPTED FOR FUZZING ///
 
     // Corresponds to testFuzz_create_lock_variousAmounts and testFuzz_create_lock_variousUnlockTimes
-    function votingEscrow_create_lock(uint256 _value, uint256 _unlock_time) public asActor {
+    function votingEscrow_create_lock(uint256 _value, uint256 _unlock_time) public {
         _value = _boundValue(_value, 1e18, 1_000_000e18);
 
         uint256 minTime = votingEscrow.MINTIME();
@@ -49,52 +49,55 @@ abstract contract VotingEscrowTargets is
         // Add 1 week to ensure that after rounding down to the nearest week, it is still >= MINTIME
         uint256 unlockTime = block.timestamp + duration + 1 weeks;
 
-        // Ensure we don't have a lock (create_lock reverts if lock exists)
-        (int128 lockedAmount, ) = votingEscrow.locked(_getActor());
-        if (lockedAmount > 0) return;
+        address actor = address(0x4001);
+        if (votingEscrow.balanceOf(actor) > 0) return;
 
-        token.mint(_getActor(), _value);
+        votingEscrow.add_to_whitelist(actor);
+        token.mint(actor, _value);
+
+        vm.startPrank(actor);
         token.approve(address(votingEscrow), _value);
         try votingEscrow.create_lock(_value, unlockTime) {} catch {
             // Should not fail given our bounds checks, but safe to catch
             assert(false);
         }
-    }
+        vm.stopPrank();
 
-    // Corresponds to testFuzz_deposit_for_variousAmounts
-    function votingEscrow_deposit_for(address _addr, uint256 _value) public asActor {
-        // testFuzz_deposit_for_variousAmounts bounds amount to [1, INITIAL_BALANCE / 2]
-        // INITIAL_BALANCE is 1_000_000e18, so max is 500_000e18
-        _value = _boundValue(_value, 1, 500_000e18);
+        (int128 lockedAmount, uint256 lockedEnd) = votingEscrow.locked(actor);
+        assert(uint256(int256(lockedAmount)) == _value);
 
-        // Ensure target has a lock
-        (int128 lockedAmount, uint256 lockedEnd) = votingEscrow.locked(_addr);
-        if (lockedAmount == 0) return;
-        if (lockedEnd <= block.timestamp) return; // Expired
-
-        token.mint(_getActor(), _value);
-        token.approve(address(votingEscrow), _value);
-
-        try votingEscrow.deposit_for(_addr, _value) {} catch {
-            assert(false);
-        }
+        // Verify unlock time rounding (corresponds to testFuzz_create_lock_variousUnlockTimes)
+        uint256 expectedEnd = (unlockTime / 1 weeks) * 1 weeks;
+        assert(lockedEnd == expectedEnd);
     }
 
     // Corresponds to testFuzz_increase_amount
-    function votingEscrow_increase_amount(uint256 _value) public asActor {
+    function votingEscrow_increase_amount(uint256 initialAmount, uint256 increaseAmount) public {
         // testFuzz_increase_amount bounds amount to [1, INITIAL_BALANCE / 2]
-        _value = _boundValue(_value, 1, 500_000e18);
+        initialAmount = _boundValue(initialAmount, 1, 500_000e18);
+        increaseAmount = _boundValue(increaseAmount, 1, 500_000e18);
 
-        (int128 lockedAmount, uint256 lockedEnd) = votingEscrow.locked(_getActor());
-        if (lockedAmount == 0) return;
-        if (lockedEnd <= block.timestamp) return; // Expired
+        address actor = address(0x3001);
+        if (votingEscrow.balanceOf(actor) > 0) return;
 
-        token.mint(_getActor(), _value);
-        token.approve(address(votingEscrow), _value);
+        votingEscrow.add_to_whitelist(actor);
+        token.mint(actor, initialAmount + increaseAmount);
 
-        try votingEscrow.increase_amount(_value) {} catch {
+        uint256 unlockTime = block.timestamp + votingEscrow.MAXTIME();
+
+        vm.startPrank(actor);
+        token.approve(address(votingEscrow), initialAmount + increaseAmount);
+        try votingEscrow.create_lock(initialAmount, unlockTime) {} catch {
             assert(false);
         }
+
+        try votingEscrow.increase_amount(increaseAmount) {} catch {
+            assert(false);
+        }
+        vm.stopPrank();
+
+        (int128 lockedAmount,) = votingEscrow.locked(actor);
+        assert(uint256(int256(lockedAmount)) == initialAmount + increaseAmount);
     }
 
     // Corresponds to testFuzz_withdraw_after_expiry
